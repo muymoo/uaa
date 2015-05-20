@@ -14,7 +14,6 @@ package org.cloudfoundry.identity.uaa.mock.token;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.googlecode.flyway.core.Flyway;
-import org.cloudfoundry.identity.uaa.TestClassNullifier;
 import org.cloudfoundry.identity.uaa.authentication.Origin;
 import org.cloudfoundry.identity.uaa.authentication.UaaPrincipal;
 import org.cloudfoundry.identity.uaa.authorization.UaaAuthorizationEndpoint;
@@ -28,9 +27,8 @@ import org.cloudfoundry.identity.uaa.scim.ScimUser;
 import org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupMembershipManager;
 import org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupProvisioning;
 import org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimUserProvisioning;
+import org.cloudfoundry.identity.uaa.test.AppContextTest;
 import org.cloudfoundry.identity.uaa.test.TestClient;
-import org.cloudfoundry.identity.uaa.test.UaaTestAccounts;
-import org.cloudfoundry.identity.uaa.test.YamlServletProfileInitializerContextInitializer;
 import org.cloudfoundry.identity.uaa.user.UaaAuthority;
 import org.cloudfoundry.identity.uaa.user.UaaUser;
 import org.cloudfoundry.identity.uaa.user.UaaUserDatabase;
@@ -41,15 +39,15 @@ import org.cloudfoundry.identity.uaa.zone.IdentityProviderProvisioning;
 import org.cloudfoundry.identity.uaa.zone.IdentityZone;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneHolder;
 import org.cloudfoundry.identity.uaa.zone.IdentityZoneProvisioning;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.config.SetFactoryBean;
 import org.springframework.http.MediaType;
-import org.springframework.mock.env.MockEnvironment;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.mock.web.MockServletContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -61,18 +59,13 @@ import org.springframework.security.oauth2.common.exceptions.InvalidTokenExcepti
 import org.springframework.security.oauth2.common.util.OAuth2Utils;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 import org.springframework.security.oauth2.provider.AuthorizationRequest;
-import org.springframework.security.oauth2.provider.ClientRegistrationService;
 import org.springframework.security.oauth2.provider.OAuth2Authentication;
 import org.springframework.security.oauth2.provider.client.BaseClientDetails;
 import org.springframework.security.oauth2.provider.client.JdbcClientDetailsService;
-import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.StringUtils;
-import org.springframework.web.context.support.XmlWebApplicationContext;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.UnsupportedEncodingException;
@@ -97,66 +90,34 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class TokenMvcMockTests extends TestClassNullifier {
-
+public class TokenMvcMockTests extends AppContextTest {
     private static String SECRET = "secret";
     private static String GRANT_TYPES = "password,implicit,client_credentials,authorization_code";
     private static String TEST_REDIRECT_URI = "http://test.example.org/redirect";
 
-    private static XmlWebApplicationContext webApplicationContext;
-    private static ClientRegistrationService clientRegistrationService;
-    private static MockMvc mockMvc;
-    private static TestClient testClient;
-    private static UaaTestAccounts testAccounts;
-    private static JdbcClientDetailsService clientDetailsService;
-    private static JdbcScimUserProvisioning userProvisioning;
-    private static JdbcScimGroupProvisioning groupProvisioning;
-    private static JdbcScimGroupMembershipManager groupMembershipManager;
-    private static UaaTokenServices tokenServices;
-    private static Set<String> defaultAuthorities;
-    private static SignerProvider signerProvider;
-    private static UaaTokenServices uaaTokenServices;
-    private static MockEnvironment mockEnvironment;
+    private TestClient testClient;
+    @Autowired @Qualifier("jdbcClientDetailsService") private JdbcClientDetailsService clientDetailsService;
+    @Autowired @Qualifier("scimUserProvisioning") private JdbcScimUserProvisioning userProvisioning;
+    @Autowired @Qualifier("scimGroupProvisioning") private JdbcScimGroupProvisioning groupProvisioning;
+    @Autowired @Qualifier("groupMembershipManager") private JdbcScimGroupMembershipManager groupMembershipManager;
+    @Autowired @Qualifier("tokenServices") private UaaTokenServices tokenServices;
+    @Autowired @Qualifier("defaultUserAuthorities") private SetFactoryBean defaultAuthorities;
+    @Autowired private SignerProvider signerProvider;
+    @Autowired private UaaTokenServices uaaTokenServices;
 
-    private static IdentityZoneProvisioning identityZoneProvisioning;
-    private static JdbcScimUserProvisioning jdbcScimUserProvisioning;
-    private static IdentityProviderProvisioning identityProviderProvisioning;
-    private static UaaAuthorizationEndpoint uaaAuthorizationEndpoint;
+    @Autowired private IdentityZoneProvisioning identityZoneProvisioning;
+    @Autowired private JdbcScimUserProvisioning jdbcScimUserProvisioning;
+    @Autowired private IdentityProviderProvisioning identityProviderProvisioning;
+    @Autowired private UaaAuthorizationEndpoint uaaAuthorizationEndpoint;
 
-    @BeforeClass
-    public static void setUpContext() throws Exception {
-        webApplicationContext = new XmlWebApplicationContext();
-        mockEnvironment = new MockEnvironment();
-        webApplicationContext.setEnvironment(mockEnvironment);
-        webApplicationContext.setServletContext(new MockServletContext());
-        new YamlServletProfileInitializerContextInitializer().initializeContext(webApplicationContext, "uaa.yml,login.yml");
-        webApplicationContext.setConfigLocation("file:./src/main/webapp/WEB-INF/spring-servlet.xml");
-        webApplicationContext.refresh();
-        webApplicationContext.registerShutdownHook();
-        FilterChainProxy springSecurityFilterChain = webApplicationContext.getBean("springSecurityFilterChain", FilterChainProxy.class);
-        clientRegistrationService = webApplicationContext.getBean(ClientRegistrationService.class);
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
-            .addFilter(springSecurityFilterChain)
-            .build();
+    @Before
+    public void setUp() throws Exception {
+        super.setUp();
 
         testClient = new TestClient(mockMvc);
-        testAccounts = UaaTestAccounts.standard(null);
-        clientDetailsService = (JdbcClientDetailsService) webApplicationContext.getBean("jdbcClientDetailsService");
-        userProvisioning = (JdbcScimUserProvisioning) webApplicationContext.getBean("scimUserProvisioning");
-        groupProvisioning = (JdbcScimGroupProvisioning) webApplicationContext.getBean("scimGroupProvisioning");
-        groupMembershipManager = (JdbcScimGroupMembershipManager) webApplicationContext.getBean("groupMembershipManager");
-        tokenServices = (UaaTokenServices) webApplicationContext.getBean("tokenServices");
-        defaultAuthorities = (Set<String>) webApplicationContext.getBean("defaultUserAuthorities");
-        signerProvider = webApplicationContext.getBean(SignerProvider.class);
-        uaaTokenServices = webApplicationContext.getBean(UaaTokenServices.class);
-        identityZoneProvisioning = webApplicationContext.getBean(IdentityZoneProvisioning.class);
-        jdbcScimUserProvisioning = webApplicationContext.getBean(JdbcScimUserProvisioning.class);
-        identityProviderProvisioning = webApplicationContext.getBean(IdentityProviderProvisioning.class);
-        uaaAuthorizationEndpoint = webApplicationContext.getBean(UaaAuthorizationEndpoint.class);
     }
 
     @Before
@@ -249,12 +210,9 @@ public class TokenMvcMockTests extends TestClassNullifier {
         }
     }
 
-    @AfterClass
-    public static void tearDownContext() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         IdentityZoneHolder.clear();
-        Flyway flyway = webApplicationContext.getBean(Flyway.class);
-        flyway.clean();
-        webApplicationContext.destroy();
     }
 
     @Test
@@ -441,12 +399,12 @@ public class TokenMvcMockTests extends TestClassNullifier {
         String state = new RandomValueStringGenerator().generate();
 
         MockHttpServletRequestBuilder oauthTokenPost = get("/oauth/authorize")
-                .session(session)
-                .param(OAuth2Utils.RESPONSE_TYPE, "code id_token")
-                .param(OAuth2Utils.SCOPE, "openid")
-                .param(OAuth2Utils.STATE, state)
-                .param(OAuth2Utils.CLIENT_ID, clientId)
-                .param(OAuth2Utils.REDIRECT_URI, TEST_REDIRECT_URI);
+            .session(session)
+            .param(OAuth2Utils.RESPONSE_TYPE, "code id_token")
+            .param(OAuth2Utils.SCOPE, "openid")
+            .param(OAuth2Utils.STATE, state)
+            .param(OAuth2Utils.CLIENT_ID, clientId)
+            .param(OAuth2Utils.REDIRECT_URI, TEST_REDIRECT_URI);
 
         MvcResult result = mockMvc.perform(oauthTokenPost).andExpect(status().is3xxRedirection()).andReturn();
         URL url = new URL(result.getResponse().getHeader("Location").replace("redirect#","redirect?"));
@@ -472,19 +430,19 @@ public class TokenMvcMockTests extends TestClassNullifier {
         SecurityContextHolder.getContext().setAuthentication(auth);
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                new MockSecurityContext(auth)
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            new MockSecurityContext(auth)
         );
 
         String state = new RandomValueStringGenerator().generate();
 
         MockHttpServletRequestBuilder oauthTokenPost = get("/oauth/authorize")
-                .session(session)
-                .param(OAuth2Utils.RESPONSE_TYPE, "code id_token")
-                .param(OAuth2Utils.SCOPE, "openid")
-                .param(OAuth2Utils.STATE, state)
-                .param(OAuth2Utils.CLIENT_ID, clientId)
-                .param(OAuth2Utils.REDIRECT_URI, TEST_REDIRECT_URI);
+            .session(session)
+            .param(OAuth2Utils.RESPONSE_TYPE, "code id_token")
+            .param(OAuth2Utils.SCOPE, "openid")
+            .param(OAuth2Utils.STATE, state)
+            .param(OAuth2Utils.CLIENT_ID, clientId)
+            .param(OAuth2Utils.REDIRECT_URI, TEST_REDIRECT_URI);
 
         MvcResult result = mockMvc.perform(oauthTokenPost).andExpect(status().is3xxRedirection()).andReturn();
         URL url = new URL(result.getResponse().getHeader("Location").replace("redirect#","redirect?"));
@@ -511,8 +469,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         SecurityContextHolder.getContext().setAuthentication(auth);
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                new MockSecurityContext(auth)
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            new MockSecurityContext(auth)
         );
 
         String state = new RandomValueStringGenerator().generate();
@@ -526,8 +484,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         session.setAttribute("authorizationRequest", authorizationRequest);
 
         MvcResult result  = mockMvc.perform(post("/oauth/authorize")
-                .session(session)
-                .param(OAuth2Utils.USER_OAUTH_APPROVAL, "true")).andExpect(status().is3xxRedirection()).andReturn();
+            .session(session)
+            .param(OAuth2Utils.USER_OAUTH_APPROVAL, "true")).andExpect(status().is3xxRedirection()).andReturn();
 
         URL url = new URL(result.getResponse().getHeader("Location").replace("redirect#","redirect?"));
         Map query = splitQuery(url);
@@ -554,8 +512,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         SecurityContextHolder.getContext().setAuthentication(auth);
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                new MockSecurityContext(auth)
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            new MockSecurityContext(auth)
         );
 
         String state = new RandomValueStringGenerator().generate();
@@ -569,8 +527,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         session.setAttribute("authorizationRequest", authorizationRequest);
 
         MvcResult result  = mockMvc.perform(post("/oauth/authorize")
-                .session(session)
-                .param(OAuth2Utils.USER_OAUTH_APPROVAL, "true")).andExpect(status().is3xxRedirection()).andReturn();
+            .session(session)
+            .param(OAuth2Utils.USER_OAUTH_APPROVAL, "true")).andExpect(status().is3xxRedirection()).andReturn();
 
         URL url = new URL(result.getResponse().getHeader("Location").replace("redirect#","redirect?"));
         Map query = splitQuery(url);
@@ -866,7 +824,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         assertNotNull(exp);
         Integer iat = (Integer)result.get(Claims.IAT);
         assertNotNull(iat);
-        assertTrue(exp>iat);
+        assertTrue(exp > iat);
 
         //TODO OpenID
 //        Integer auth_time = (Integer)result.get(Claims.AUTH_TIME);
@@ -917,8 +875,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         String userId = "testuser"+new RandomValueStringGenerator().generate();
         String userScopes = "space.1.developer,space.2.developer,org.1.reader,org.2.reader,org.12345.admin,scope.one,scope.two,scope.three";
         ScimUser developer = setUpUser(userId, userScopes);
-        Set<String> allUserScopes = new HashSet<>();
-        allUserScopes.addAll(defaultAuthorities);
+        Set<Object> allUserScopes = new HashSet<>();
+        allUserScopes.addAll(defaultAuthorities.getObject());
         allUserScopes.addAll(StringUtils.commaDelimitedListToSet(userScopes));
 
         validatePasswordGrantToken(
@@ -961,7 +919,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
             "space.1.developer",
             "space.2.developer"
         );
-        Set<String> set1 = new HashSet<>(defaultAuthorities);
+        Set<Object> set1 = new HashSet<Object>(defaultAuthorities.getObject());
         set1.addAll(Arrays.asList("org.12345.admin",
             "space.1.developer",
             "space.2.developer",
@@ -1516,7 +1474,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         IdentityZoneHolder.clear();
         mockMvc.perform(post("http://localhost/oauth/token")
             .accept(MediaType.APPLICATION_JSON_VALUE)
-            //.header("Host", subdomain + ".localhost") - with updated Spring, this now works for request.getServerName
+                //.header("Host", subdomain + ".localhost") - with updated Spring, this now works for request.getServerName
             .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
             .param("grant_type", "client_credentials")
             .param("client_id", clientId)
@@ -1556,13 +1514,13 @@ public class TokenMvcMockTests extends TestClassNullifier {
         IdentityZoneHolder.clear();
 
         mockMvc.perform(post("/oauth/token")
-                .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
-                .param("username", "user@example.com")
-                .param("password", "secret")
-                .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
-                .param(OAuth2Utils.RESPONSE_TYPE,"token")
-                .param(OAuth2Utils.GRANT_TYPE, "password")
-                .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isOk());
+            .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
+            .param("username", "user@example.com")
+            .param("password", "secret")
+            .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
+            .param(OAuth2Utils.RESPONSE_TYPE, "token")
+            .param(OAuth2Utils.GRANT_TYPE, "password")
+            .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isOk());
     }
 
     @Test
@@ -1580,13 +1538,13 @@ public class TokenMvcMockTests extends TestClassNullifier {
         IdentityZoneHolder.clear();
 
         mockMvc.perform(post("/oauth/token")
-                .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
-                .param("username", "user@example.com")
-                .param("password", "secret")
-                .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
-                .param(OAuth2Utils.RESPONSE_TYPE,"token")
-                .param(OAuth2Utils.GRANT_TYPE, "password")
-                .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isUnauthorized());
+            .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
+            .param("username", "user@example.com")
+            .param("password", "secret")
+            .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
+            .param(OAuth2Utils.RESPONSE_TYPE,"token")
+            .param(OAuth2Utils.GRANT_TYPE, "password")
+            .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isUnauthorized());
 
     }
 
@@ -1606,12 +1564,12 @@ public class TokenMvcMockTests extends TestClassNullifier {
         IdentityZoneHolder.clear();
 
         mockMvc.perform(post("/oauth/token")
-                .param("username", "user@example.com")
-                .param("password", "secret")
-                .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
-                .param(OAuth2Utils.RESPONSE_TYPE,"token")
-                .param(OAuth2Utils.GRANT_TYPE, "password")
-                .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isUnauthorized());
+            .param("username", "user@example.com")
+            .param("password", "secret")
+            .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
+            .param(OAuth2Utils.RESPONSE_TYPE,"token")
+            .param(OAuth2Utils.GRANT_TYPE, "password")
+            .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isUnauthorized());
 
     }
 
@@ -1681,6 +1639,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
     private ScimUser setUpUser() {
         return setUpUser("user@example.com");
     }
+
     private ScimUser setUpUser(String username) {
         ScimUser scimUser = new ScimUser();
         scimUser.setUserName(username);

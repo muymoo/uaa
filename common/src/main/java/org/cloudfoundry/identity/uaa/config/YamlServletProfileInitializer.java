@@ -53,9 +53,9 @@ import java.util.Set;
  */
 public class YamlServletProfileInitializer implements ApplicationContextInitializer<ConfigurableWebApplicationContext> {
 
-    private static final String PROFILE_CONFIG_FILE_LOCATIONS = "environmentConfigLocations";
+    static final String PROFILE_CONFIG_FILE_LOCATIONS = "environmentConfigLocations";
 
-    private static final String PROFILE_CONFIG_FILE_DEFAULT = "environmentConfigDefaults";
+    static final String PROFILE_CONFIG_FILE_DEFAULT = "environmentConfigDefaults";
 
     public static final String[] DEFAULT_PROFILE_CONFIG_FILE_LOCATIONS = new String[] { "${APPLICATION_CONFIG_URL}",
                     "file:${APPLICATION_CONFIG_FILE}" };
@@ -66,17 +66,21 @@ public class YamlServletProfileInitializer implements ApplicationContextInitiali
 
     @Override
     public void initialize(ConfigurableWebApplicationContext applicationContext) {
+        ServletConfig servletConfig = applicationContext.getServletConfig();
+        String locationsInitParameter = servletConfig == null ? null : servletConfig.getInitParameter(PROFILE_CONFIG_FILE_LOCATIONS);
+        String filesInitParameter = servletConfig == null ? null : servletConfig.getInitParameter(PROFILE_CONFIG_FILE_DEFAULT);
+        initialize(applicationContext, locationsInitParameter, filesInitParameter, applicationContext.getServletConfig());
+    }
 
+    void initialize(ConfigurableWebApplicationContext applicationContext, String locations, String fileDefault, ServletConfig servletConfig) {
         ServletContext servletContext = applicationContext.getServletContext();
         WebApplicationContextUtils.initServletPropertySources(applicationContext.getEnvironment().getPropertySources(),
-                        servletContext, applicationContext.getServletConfig());
+                        servletContext, servletConfig);
 
-        ServletConfig servletConfig = applicationContext.getServletConfig();
-        String locations = servletConfig == null ? null : servletConfig.getInitParameter(PROFILE_CONFIG_FILE_LOCATIONS);
         List<Resource> resources = new ArrayList<>();
 
         //add default locations first
-        Set<String> defaultLocation = StringUtils.commaDelimitedListToSet(servletConfig == null ? null : servletConfig.getInitParameter(PROFILE_CONFIG_FILE_DEFAULT));
+        Set<String> defaultLocation = StringUtils.commaDelimitedListToSet(fileDefault);
         if (defaultLocation != null && defaultLocation.size()>0) {
             for (String s : defaultLocation) {
                 Resource defaultResource = new ClassPathResource(s);

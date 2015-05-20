@@ -12,52 +12,25 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.mock.oauth;
 
-import org.cloudfoundry.identity.uaa.TestClassNullifier;
-import org.cloudfoundry.identity.uaa.test.YamlServletProfileInitializerContextInitializer;
-import org.junit.After;
+import org.cloudfoundry.identity.uaa.test.AppContextTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.mock.web.MockServletContext;
-import org.springframework.security.oauth2.provider.ClientRegistrationService;
-import org.springframework.security.web.FilterChainProxy;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.support.XmlWebApplicationContext;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.config.SetFactoryBean;
 
-import java.util.Set;
-
-public class CheckDefaultAuthoritiesMvcMockTests extends TestClassNullifier {
-
-    XmlWebApplicationContext webApplicationContext;
-    ClientRegistrationService clientRegistrationService;
-    private MockMvc mockMvc;
-    private Set<String> defaultAuthorities;
+public class CheckDefaultAuthoritiesMvcMockTests extends AppContextTest {
+    @Autowired @Qualifier("defaultUserAuthorities") private SetFactoryBean defaultAuthorities;
 
     @Before
     public void setUp() throws Exception {
-        webApplicationContext = new XmlWebApplicationContext();
-        webApplicationContext.setServletContext(new MockServletContext());
-        new YamlServletProfileInitializerContextInitializer().initializeContext(webApplicationContext, "uaa.yml,login.yml");
-        webApplicationContext.setConfigLocation("file:./src/main/webapp/WEB-INF/spring-servlet.xml");
-        webApplicationContext.refresh();
-        FilterChainProxy springSecurityFilterChain = webApplicationContext.getBean("springSecurityFilterChain", FilterChainProxy.class);
-
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilter(springSecurityFilterChain)
-            .build();
-        clientRegistrationService = webApplicationContext.getBean(ClientRegistrationService.class);
-
-        defaultAuthorities = (Set<String>) webApplicationContext.getBean("defaultUserAuthorities");
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        webApplicationContext.destroy();
+        super.setUp();
     }
 
     @Test
     public void testDefaultAuthorities() throws Exception {
-        Assert.assertEquals(10, defaultAuthorities.size());
+        Assert.assertEquals(10, defaultAuthorities.getObject().size());
         String[] expected = new String[] {
             "openid",
             "scim.me",
@@ -71,7 +44,7 @@ public class CheckDefaultAuthoritiesMvcMockTests extends TestClassNullifier {
             "oauth.approvals"
         };
         for (String s : expected) {
-            Assert.assertTrue("Expecting authority to be present:"+s,defaultAuthorities.contains(s));
+            Assert.assertTrue("Expecting authority to be present:"+s,defaultAuthorities.getObject().contains(s));
         }
     }
 }

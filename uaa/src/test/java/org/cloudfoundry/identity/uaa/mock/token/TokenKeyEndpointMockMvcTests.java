@@ -13,22 +13,17 @@
 package org.cloudfoundry.identity.uaa.mock.token;
 
 import org.apache.commons.codec.binary.Base64;
-import org.cloudfoundry.identity.uaa.TestClassNullifier;
 import org.cloudfoundry.identity.uaa.oauth.token.SignerProvider;
+import org.cloudfoundry.identity.uaa.test.AppContextTest;
 import org.cloudfoundry.identity.uaa.test.TestClient;
 import org.cloudfoundry.identity.uaa.test.UaaTestAccounts;
-import org.cloudfoundry.identity.uaa.test.YamlServletProfileInitializerContextInitializer;
 import org.cloudfoundry.identity.uaa.util.JsonUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockServletContext;
-import org.springframework.security.web.FilterChainProxy;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.support.XmlWebApplicationContext;
 
 import java.util.Map;
 
@@ -40,10 +35,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class TokenKeyEndpointMockMvcTests extends TestClassNullifier {
+public class TokenKeyEndpointMockMvcTests extends AppContextTest {
 
-    XmlWebApplicationContext webApplicationContext;
-    private MockMvc mockMvc;
+    @Autowired SignerProvider provider;
     private TestClient testClient;
     private UaaTestAccounts testAccounts;
 
@@ -86,31 +80,11 @@ public class TokenKeyEndpointMockMvcTests extends TestClassNullifier {
 
     @Before
     public void setUp() throws Exception {
-        webApplicationContext = new XmlWebApplicationContext();
-        webApplicationContext.setServletContext(new MockServletContext());
-        new YamlServletProfileInitializerContextInitializer().initializeContext(webApplicationContext, "uaa.yml,login.yml");
-        webApplicationContext.setConfigLocation("file:./src/main/webapp/WEB-INF/spring-servlet.xml");
-        webApplicationContext.refresh();
-        FilterChainProxy springSecurityFilterChain = webApplicationContext.getBean("springSecurityFilterChain", FilterChainProxy.class);
+        super.setUp();
 
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilter(springSecurityFilterChain)
-            .build();
-        testClient = new TestClient(mockMvc);
-
-        SignerProvider provider = webApplicationContext.getBean(SignerProvider.class);
         provider.setSigningKey(signKey);
         provider.setVerifierKey(verifyKey);
         provider.afterPropertiesSet();
-
-        testClient = new TestClient(mockMvc);
-        testAccounts = UaaTestAccounts.standard(null);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-//        System.clearProperty("jwt.token.signing-key");
-//        System.clearProperty("jwt.token.verification-key");
-        webApplicationContext.destroy();
     }
 
     @Test
