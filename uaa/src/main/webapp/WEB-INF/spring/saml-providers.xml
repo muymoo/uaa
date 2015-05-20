@@ -106,11 +106,11 @@
         <bean id="metadata" class="org.cloudfoundry.identity.uaa.login.saml.ZoneAwareMetadataManager"
               depends-on="idpBootstrap, metaDataProviders"
               destroy-method="destroy">
-            <constructor-arg name="providerDao" ref="identityProviderProvisioning"/>
-            <constructor-arg name="zoneDao" ref="identityZoneProvisioning"/>
-            <constructor-arg name="configurator" ref="metaDataProviders"/>
-            <constructor-arg name="keyManager" ref="keyManager"/>
-            <constructor-arg name="listener" ref="providerChangeListener"/>
+            <constructor-arg index="0" ref="identityProviderProvisioning"/>
+            <constructor-arg index="1" ref="identityZoneProvisioning"/>
+            <constructor-arg index="2" ref="metaDataProviders"/>
+            <constructor-arg index="3" ref="keyManager"/>
+            <constructor-arg index="4" ref="providerChangeListener"/>
             <property name="refreshCheckInterval" value="${login.saml.metadataRefreshInterval:120000}"/>
         </bean>
 
@@ -267,8 +267,8 @@
         </bean>
 
         <bean id="providerChangeListener" class="org.cloudfoundry.identity.uaa.login.saml.ProviderChangedListener">
-            <constructor-arg name="configurator" ref="metaDataProviders"/>
-            <constructor-arg name="zoneProvisioning" ref="identityZoneProvisioning"/>
+            <constructor-arg index="0" ref="metaDataProviders"/>
+            <constructor-arg index="1" ref="identityZoneProvisioning"/>
         </bean>
 
         <beans profile="fileMetadata">

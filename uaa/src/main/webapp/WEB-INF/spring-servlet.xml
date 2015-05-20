@@ -202,13 +202,13 @@
         </constructor-arg>
     </bean>
 
-    <bean id="bcryptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder" />
+    <bean id="bcryptPasswordEncoder" class="org.cloudfoundry.identity.uaa.util.SimpleStringPasswordEncoder" />
 
     <bean id="cachingPasswordEncoder" class="org.cloudfoundry.identity.uaa.util.CachingPasswordEncoder">
         <property name="passwordEncoder" ref="bcryptPasswordEncoder"/>
         <property name="maxKeys" value="1000"/>
         <property name="maxEncodedPasswords" value="5"/>
-        <property name="enabled" value="${oauth.client.encoder_cache:true}"/>
+        <property name="enabled" value="false"/>
     </bean>
 
     <!--<oauth:web-expression-handler id="oauthWebExpressionHandler" />-->
@@ -232,20 +232,20 @@
         <property name="prompts">
             <util:list>
                 <bean class="org.cloudfoundry.identity.uaa.authentication.login.Prompt">
-                    <constructor-arg name="name" value="username" />
-                    <constructor-arg name="text" value="Email" />
-                    <constructor-arg name="type" value="text" />
+                    <constructor-arg index="0" value="username" />
+                    <constructor-arg index="1" value="text" />
+                    <constructor-arg index="2" value="Email" />
                 </bean>
                 <bean class="org.cloudfoundry.identity.uaa.authentication.login.Prompt">
-                    <constructor-arg name="name" value="password" />
-                    <constructor-arg name="text" value="Password" />
-                    <constructor-arg name="type" value="password" />
+                    <constructor-arg index="0" value="password" />
+                    <constructor-arg index="1" value="password" />
+                    <constructor-arg index="2" value="Password" />
                 </bean>
                 <bean class="org.cloudfoundry.identity.uaa.authentication.login.Prompt">
-                    <constructor-arg name="name" value="passcode" />
-                    <constructor-arg name="text"
+                    <constructor-arg index="0" value="passcode" />
+                    <constructor-arg index="1" value="password" />
+                    <constructor-arg index="2"
                                      value="One Time Code (Get one at ${uaa.url:http://localhost:8080/uaa}/passcode)" />
-                    <constructor-arg name="type" value="password" />
                 </bean>
             </util:list>
         </property>
@@ -255,7 +255,6 @@
 
     <bean id="healthzEndpoint" class="org.cloudfoundry.identity.uaa.web.HealthzEndpoint" />
 
-    <context:annotation-config />
     <bean class="org.cloudfoundry.identity.uaa.coverage.CoverageConfig" />
 
     <bean id="idpBootstrap" class="org.cloudfoundry.identity.uaa.config.IdentityProviderBootstrap">
@@ -281,9 +280,9 @@
         <import resource="classpath:ldap-integration.xml"/>
 
         <bean id="checkLdapIdpEnabledManager" class="org.cloudfoundry.identity.uaa.authentication.manager.CheckIdpEnabledAuthenticationManager">
-            <constructor-arg name="origin" value="ldap"/>
-            <constructor-arg name="identityProviderProvisioning" ref="identityProviderProvisioning"/>
-            <constructor-arg name="delegate" ref="ldapAuthenticationManager"/>
+            <constructor-arg index="0" ref="ldapAuthenticationManager"/>
+            <constructor-arg index="1" value="ldap"/>
+            <constructor-arg index="2" ref="identityProviderProvisioning"/>
         </bean>
 
         <bean id="authzAuthenticationMgr" class="org.cloudfoundry.identity.uaa.authentication.manager.ChainedAuthenticationManager">
@@ -319,9 +318,9 @@
     <beans profile="keystone">
         <import resource="spring/keystone-integration.xml"/>
         <bean id="checkIdpEnabledManager" class="org.cloudfoundry.identity.uaa.authentication.manager.CheckIdpEnabledAuthenticationManager">
-            <constructor-arg name="origin" value="keystone"/>
-            <constructor-arg name="identityProviderProvisioning" ref="identityProviderProvisioning"/>
-            <constructor-arg name="delegate" ref="keystoneAuthenticationManager"/>
+            <constructor-arg index="0" ref="keystoneAuthenticationManager"/>
+            <constructor-arg index="1" value="keystone"/>
+            <constructor-arg index="2" ref="identityProviderProvisioning"/>
         </bean>
 
         <bean id="authzAuthenticationMgr" class="org.cloudfoundry.identity.uaa.authentication.manager.ChainedAuthenticationManager">

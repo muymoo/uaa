@@ -12,6 +12,14 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.util;
 
+import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.codec.Hex;
+import org.springframework.security.crypto.codec.Utf8;
+import org.springframework.security.crypto.keygen.BytesKeyGenerator;
+import org.springframework.security.crypto.keygen.KeyGenerators;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
@@ -20,14 +28,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.springframework.security.crypto.util.EncodingUtils.concatenate;
-import org.springframework.security.crypto.bcrypt.BCrypt;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.codec.Hex;
-import org.springframework.security.crypto.codec.Utf8;
-import org.springframework.security.crypto.keygen.BytesKeyGenerator;
-import org.springframework.security.crypto.keygen.KeyGenerators;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 
 /**
  * Wrapper around a slow password encoder that does a fast translation in memory only
@@ -55,7 +55,7 @@ public class CachingPasswordEncoder implements PasswordEncoder {
 
     private final ConcurrentHashMap<CharSequence, Set<String>> cache = new ConcurrentHashMap<>();
 
-    private BCryptPasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     public CachingPasswordEncoder() throws NoSuchAlgorithmException {
         messageDigest = MessageDigest.getInstance("SHA-256");
@@ -69,7 +69,7 @@ public class CachingPasswordEncoder implements PasswordEncoder {
         return passwordEncoder;
     }
 
-    public void setPasswordEncoder(BCryptPasswordEncoder passwordEncoder) {
+    public void setPasswordEncoder(PasswordEncoder passwordEncoder) {
         this.passwordEncoder = passwordEncoder;
     }
 

@@ -22,11 +22,11 @@
         http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.0.xsd">
 
     <bean id="scimUserProvisioning" class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimUserProvisioning">
-        <constructor-arg ref="jdbcTemplate" />
-        <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory" />
+        <constructor-arg index="0" ref="jdbcTemplate" />
+        <constructor-arg index="1" ref="jdbcPagingListFactory" />
         <!-- Password validation turned off to match cloud controller policies -->
         <property name="passwordValidator">
-            <bean class="org.cloudfoundry.identity.uaa.password.ZxcvbnPasswordValidator">
+            <bean class="org.cloudfoundry.identity.uaa.password.NoOpPasswordValidator">
                 <property name="scoreCalculator" ref="zxcvbnScoreCalculator" />
             </bean>
         </property>
@@ -63,7 +63,7 @@
     <bean id="scimUserQueryConverter" class="org.cloudfoundry.identity.uaa.scim.jdbc.ScimSearchQueryConverter">
         <property name="attributeNameMapper">
             <bean class="org.cloudfoundry.identity.uaa.rest.SimpleAttributeNameMapper">
-                <constructor-arg name="paramsMap">
+                <constructor-arg index="0">
                     <map key-type="java.lang.String" value-type="java.lang.String">
                         <entry key="emails\.value" value="email" />
                         <entry key="groups\.display" value="authorities" />
@@ -75,21 +75,21 @@
     </bean>
 
     <bean id="scimGroupProvisioning" class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupProvisioning">
-        <constructor-arg ref="jdbcTemplate" />
-        <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory" />
+        <constructor-arg index="0" ref="jdbcTemplate" />
+        <constructor-arg index="1" ref="jdbcPagingListFactory" />
     </bean>
 
     <bean id="groupMembershipManager" class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupMembershipManager">
-        <constructor-arg name="jdbcTemplate" ref="jdbcTemplate" />
-        <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory"/>
+        <constructor-arg index="0" ref="jdbcTemplate" />
+        <constructor-arg index="1" ref="jdbcPagingListFactory"/>
         <property name="scimGroupProvisioning" ref="scimGroupProvisioning" />
         <property name="scimUserProvisioning" ref="scimUserProvisioning" />
         <property name="defaultUserGroups" ref="defaultUserAuthorities" />
     </bean>
 
     <bean id="externalGroupMembershipManager" class="org.cloudfoundry.identity.uaa.scim.jdbc.JdbcScimGroupExternalMembershipManager">
-        <constructor-arg name="jdbcTemplate" ref="jdbcTemplate" />
-        <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory" />
+        <constructor-arg index="0" ref="jdbcTemplate" />
+        <constructor-arg index="1" ref="jdbcPagingListFactory" />
         <property name="scimGroupProvisioning" ref="scimGroupProvisioning" />
     </bean>
 
@@ -119,8 +119,8 @@
     </bean>
 
     <bean id="scimGroupEndpoints" class="org.cloudfoundry.identity.uaa.scim.endpoints.ScimGroupEndpoints">
-        <constructor-arg name="scimGroupProvisioning" ref="scimGroupProvisioning" />
-        <constructor-arg name="membershipManager" ref="groupMembershipManager" />
+        <constructor-arg index="0" ref="scimGroupProvisioning" />
+        <constructor-arg index="1" ref="groupMembershipManager" />
         <property name="statuses" ref="exceptionToStatusMap" />
         <property name="messageConverters">
             <bean class="org.cloudfoundry.identity.uaa.error.ExceptionReportHttpMessageConverter" />
@@ -281,24 +281,24 @@
     </bean>
 
     <bean id="scimUserBootstrap" class="org.cloudfoundry.identity.uaa.scim.bootstrap.ScimUserBootstrap">
-        <constructor-arg name="scimUserProvisioning" ref="scimUserProvisioning" />
-        <constructor-arg name="scimGroupProvisioning" ref="scimGroupProvisioning" />
-        <constructor-arg name="membershipManager" ref="groupMembershipManager" />
-        <constructor-arg ref="users" />
+        <constructor-arg index="0" ref="scimUserProvisioning" />
+        <constructor-arg index="1" ref="scimGroupProvisioning" />
+        <constructor-arg index="2" ref="groupMembershipManager" />
+        <constructor-arg index="3" ref="users" />
         <property name="override" value="${scim.user.override:false}" />
     </bean>
 
     <bean id="scimGroupBootstrap" class="org.cloudfoundry.identity.uaa.scim.bootstrap.ScimGroupBootstrap">
-        <constructor-arg name="scimUserProvisioning" ref="scimUserProvisioning" />
-        <constructor-arg name="scimGroupProvisioning" ref="scimGroupProvisioning" />
-        <constructor-arg name="membershipManager" ref="groupMembershipManager" />
+        <constructor-arg index="0" ref="scimGroupProvisioning" />
+        <constructor-arg index="1" ref="scimUserProvisioning" />
+        <constructor-arg index="2" ref="groupMembershipManager" />
         <property name="groups" ref="groups" />
         <property name="groupMembers" ref="members" />
     </bean>
 
     <bean id="scimExternalGroupBootstrap" class="org.cloudfoundry.identity.uaa.scim.bootstrap.ScimExternalGroupBootstrap">
-        <constructor-arg name="scimGroupProvisioning" ref="scimGroupProvisioning" />
-        <constructor-arg name="externalMembershipManager" ref="externalGroupMembershipManager" />
+        <constructor-arg index="0" ref="scimGroupProvisioning" />
+        <constructor-arg index="1" ref="externalGroupMembershipManager" />
         <property name="externalGroupMap" ref="externalGroups" />
         <property name="addNonExistingGroups" value="true"/>
     </bean>

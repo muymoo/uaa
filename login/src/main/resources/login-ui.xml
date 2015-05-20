@@ -190,8 +190,8 @@
 
 
   <bean id="loginEntryPoint" class="org.cloudfoundry.identity.uaa.security.CsrfAwareEntryPointAndDeniedHandler">
-      <constructor-arg name="redirectCsrf" value="/invalid_request" />
-      <constructor-arg name="redirectNotLoggedIn" value="/login" />
+      <constructor-arg index="0" value="/invalid_request" />
+      <constructor-arg index="1" value="/login" />
   </bean>
 
   <bean id="logoutHandler" class="org.cloudfoundry.identity.uaa.authentication.WhitelistLogoutHandler">
@@ -306,7 +306,6 @@
 
     <bean id="openIdUserDetailsService" class="org.cloudfoundry.identity.uaa.openid2.OpenIdUserDetailsService" />
 
-    <context:annotation-config />
     <bean id="loginServerConfig" class="org.cloudfoundry.identity.uaa.login.LoginServerConfig" />
 
     <mvc:resources mapping="/resources/**" location="/resources/" />

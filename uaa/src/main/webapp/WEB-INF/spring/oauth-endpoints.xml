@@ -243,9 +243,9 @@
     </bean>
 
     <bean id="approvalStore" class="org.cloudfoundry.identity.uaa.oauth.approval.JdbcApprovalStore">
-        <constructor-arg name="jdbcTemplate" ref="jdbcTemplate" />
-        <constructor-arg name="pagingListFactory" ref="jdbcPagingListFactory" />
-        <constructor-arg>
+        <constructor-arg index="0" ref="jdbcTemplate" />
+        <constructor-arg index="1" ref="jdbcPagingListFactory" />
+        <constructor-arg index="2">
             <bean class="org.cloudfoundry.identity.uaa.scim.jdbc.ScimSearchQueryConverter" />
         </constructor-arg>
     </bean>
@@ -332,25 +332,25 @@
     </bean>
 
     <bean id="uaaAuthenticationMgr" class="org.cloudfoundry.identity.uaa.authentication.manager.CheckIdpEnabledAuthenticationManager">
-        <constructor-arg name="delegate" ref="uaaUserDatabaseAuthenticationManager"/>
-        <constructor-arg name="origin" value="uaa"/>
-        <constructor-arg name="identityProviderProvisioning" ref="identityProviderProvisioning"/>
+        <constructor-arg index="0" ref="uaaUserDatabaseAuthenticationManager"/>
+        <constructor-arg index="1" value="uaa"/>
+        <constructor-arg index="2" ref="identityProviderProvisioning"/>
     </bean>
 
     <bean id="authzAuthenticationMgr" class="org.cloudfoundry.identity.uaa.authentication.manager.CheckIdpEnabledAuthenticationManager">
-        <constructor-arg name="delegate" ref="uaaUserDatabaseAuthenticationManager"/>
-        <constructor-arg name="origin" value="uaa"/>
-        <constructor-arg name="identityProviderProvisioning" ref="identityProviderProvisioning"/>
+        <constructor-arg index="0" ref="uaaUserDatabaseAuthenticationManager"/>
+        <constructor-arg index="1" value="uaa"/>
+        <constructor-arg index="2" ref="identityProviderProvisioning"/>
     </bean>
 
     <bean id="zoneAwareAuthzAuthenticationManager" class="org.cloudfoundry.identity.uaa.authentication.manager.DynamicZoneAwareAuthenticationManager"
         destroy-method="destroy">
-        <constructor-arg name="authzAuthenticationMgr" ref="authzAuthenticationMgr"/>
-        <constructor-arg name="internalUaaAuthenticationManager" ref="uaaAuthenticationMgr"/>
-        <constructor-arg name="provisioning" ref="identityProviderProvisioning"/>
-        <constructor-arg name="scimGroupExternalMembershipManager" ref="externalGroupMembershipManager"/>
-        <constructor-arg name="scimGroupProvisioning" ref="scimGroupProvisioning"/>
-        <constructor-arg name="ldapLoginAuthenticationManager" ref="ldapLoginAuthenticationMgr"/>
+        <constructor-arg index="0" ref="authzAuthenticationMgr"/>
+        <constructor-arg index="1" ref="identityProviderProvisioning"/>
+        <constructor-arg index="2" ref="uaaAuthenticationMgr"/>
+        <constructor-arg index="3" ref="externalGroupMembershipManager"/>
+        <constructor-arg index="4" ref="scimGroupProvisioning"/>
+        <constructor-arg index="5" ref="ldapLoginAuthenticationMgr"/>
     </bean>
 
 </beans>
