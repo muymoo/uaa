@@ -176,13 +176,6 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
         Integer refreshTokenIssuedAt = (Integer) claims.get(IAT);
         long refreshTokenIssueDate = refreshTokenIssuedAt.longValue() * 1000l;
 
-        // If the user changed their password, expire the refresh token
-        if (user.getModified().after(new Date(refreshTokenIssueDate))) {
-            logger.debug("User was last modified at " + user.getModified() + " refresh token was issued at "
-                            + new Date(refreshTokenIssueDate));
-            throw new InvalidTokenException("Invalid refresh token (password changed): " + refreshTokenValue);
-        }
-
         Integer refreshTokenExpiry = (Integer) claims.get(EXP);
         long refreshTokenExpireDate = refreshTokenExpiry.longValue() * 1000l;
 
@@ -371,7 +364,6 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
         }
 
         if (StringUtils.hasText(revocableHashSignature)) {
-            response.put(Claims.TOKEN_TYPE, "revocable");
             response.put(Claims.REVOCATION_SIGNATURE, revocableHashSignature);
         }
 
@@ -414,11 +406,10 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
             userEmail = user.getEmail();
         }
 
-        String revocableHashSignature = null;
-        if ("revocable".equals(authentication.getOAuth2Request().getRequestParameters().get("token_type"))) {
-            ClientDetails client = clientDetailsService.loadClientByClientId(authentication.getOAuth2Request().getClientId());
-            revocableHashSignature = getRevocableTokenSignature(client,user);
-        }
+
+        ClientDetails client = clientDetailsService.loadClientByClientId(authentication.getOAuth2Request().getClientId());
+        String revocableHashSignature = getRevocableTokenSignature(client, user);
+
         OAuth2RefreshToken refreshToken = createRefreshToken(authentication, revocableHashSignature);
 
 
@@ -437,7 +428,6 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
         Map<String, String> additionalAuthorizationAttributes = getAdditionalAuthorizationAttributes(authentication
                         .getOAuth2Request().getRequestParameters().get("authorities"));
 
-        ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
         Integer validity = client.getAccessTokenValiditySeconds();
         Set<String> responseTypes = extractResponseTypes(authentication);
         OAuth2AccessToken accessToken =
@@ -552,6 +542,8 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
             user == null ? null : user.getId(),
             user == null ? null : user.getPassword(),
             user == null ? null : user.getSalt(),
+            user == null ? null : user.getEmail(),
+            user == null ? null : user.getUsername(),
         };
         List<String> saltlist = new LinkedList<>();
         for (String s : salts) {
@@ -605,7 +597,6 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
         }
 
         if (StringUtils.hasText(revocableSignature)) {
-            response.put(Claims.TOKEN_TYPE, "revocable");
             response.put(Claims.REVOCATION_SIGNATURE, revocableSignature);
         }
 
@@ -760,13 +751,6 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
             Integer accessTokenIssuedAt = (Integer) claims.get(IAT);
             long accessTokenIssueDate = accessTokenIssuedAt.longValue() * 1000l;
 
-            // If the user changed their password, expire the access token
-            if (user.getModified().after(new Date(accessTokenIssueDate))) {
-                logger.debug("User was last modified at " + user.getModified() + " access token was issued at "
-                                + new Date(accessTokenIssueDate));
-                throw new InvalidTokenException("Invalid access token (user modified): " + accessToken);
-            }
-
             // Check approvals to make sure they're all valid, approved and not
             // more recent
             // than the token itself
@@ -830,17 +814,17 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
             throw new InvalidTokenException("Invalid issuer for token:"+claims.get(ISS));
         }
 
-        if ("revocable".equals(claims.get(Claims.TOKEN_TYPE))) {
-            String signature = (String)claims.get(Claims.REVOCATION_SIGNATURE);
-            String clientId = (String)claims.get(Claims.CLIENT_ID);
-            String userId = (String)claims.get(Claims.USER_ID);
+        String signature = (String)claims.get(Claims.REVOCATION_SIGNATURE);
+        if (signature!=null) { //this ensures backwards compatibility during upgrade
+            String clientId = (String) claims.get(Claims.CLIENT_ID);
+            String userId = (String) claims.get(Claims.USER_ID);
             UaaUser user = null;
             ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
             try {
                 user = userDatabase.retrieveUserById(userId);
             } catch (UsernameNotFoundException x) {
             }
-            if (signature!=null && !signature.equals(getRevocableTokenSignature(client,user))) {
+            if (signature != null && !signature.equals(getRevocableTokenSignature(client, user))) {
                 throw new TokenRevokedException(token);
             }
         }

@@ -210,7 +210,6 @@ public class CheckTokenEndpointTests {
         authorizationRequest = new AuthorizationRequest("client", Collections.singleton("read"));
         authorizationRequest.setResourceIds(new HashSet<>(Arrays.asList("client","scim")));
         Map<String,String> requestParameters = new HashMap<>();
-        requestParameters.put("token_type", "revocable");
         authorizationRequest.setRequestParameters(requestParameters);
         authentication = new OAuth2Authentication(authorizationRequest.createOAuth2Request(),
                         UaaAuthenticationTestFactory.getAuthentication(userId, userName, "olds@vmware.com"));
@@ -294,9 +293,53 @@ public class CheckTokenEndpointTests {
             false,
             IdentityZoneHolder.get().getId(),
             "changedsalt");
-        mockUserDatabase(userId,user);
+        mockUserDatabase(userId, user);
         endpoint.checkToken(accessToken.getValue());
     }
+
+    @Test(expected = TokenRevokedException.class)
+    public void testRejectUserUsernameChange() throws Exception {
+        user = new UaaUser(
+            userId,
+            "newUsername@test.org",
+            "password",
+            userEmail,
+            UaaAuthority.USER_AUTHORITIES,
+            "GivenName",
+            "FamilyName",
+            new Date(System.currentTimeMillis() - 2000),
+            new Date(System.currentTimeMillis() - 2000),
+            Origin.UAA,
+            "externalId",
+            false,
+            IdentityZoneHolder.get().getId(),
+            "salt");
+        mockUserDatabase(userId, user);
+        endpoint.checkToken(accessToken.getValue());
+    }
+
+    @Test(expected = TokenRevokedException.class)
+    public void testRejectUserEmailChange() throws Exception {
+        user = new UaaUser(
+            userId,
+            userName,
+            "password",
+            "newEmail@test.org",
+            UaaAuthority.USER_AUTHORITIES,
+            "GivenName",
+            "FamilyName",
+            new Date(System.currentTimeMillis() - 2000),
+            new Date(System.currentTimeMillis() - 2000),
+            Origin.UAA,
+            "externalId",
+            false,
+            IdentityZoneHolder.get().getId(),
+            "salt");
+        mockUserDatabase(userId, user);
+        endpoint.checkToken(accessToken.getValue());
+    }
+
+
 
     @Test(expected = TokenRevokedException.class)
     public void testRejectUserPasswordChange() throws Exception {

@@ -355,7 +355,6 @@ public class UaaTokenServicesTests {
         authorizationRequest.setResourceIds(new HashSet<>(resourceIds));
         Map<String, String> azParameters = new HashMap<>(authorizationRequest.getRequestParameters());
         azParameters.put(GRANT_TYPE, PASSWORD);
-        azParameters.put("token_type", "revocable");
         authorizationRequest.setRequestParameters(azParameters);
         Authentication userAuthentication = defaultUserAuthentication;
         OAuth2Authentication authentication = new OAuth2Authentication(authorizationRequest.createOAuth2Request(), userAuthentication);
@@ -699,10 +698,7 @@ public class UaaTokenServicesTests {
         assertTrue(((Integer) claims.get(Claims.IAT)) > 0);
         assertTrue(((Integer) claims.get(Claims.EXP)) > 0);
         assertTrue(((Integer) claims.get(Claims.EXP)) - ((Integer) claims.get(Claims.IAT)) > 0);
-        if ("revocable".equals(authentication.getOAuth2Request().getRequestParameters().get("token_type"))) {
-            assertEquals("revocable",claims.get(Claims.TOKEN_TYPE));
-            assertNotNull("token revocation signature must be present.",claims.get(Claims.REVOCATION_SIGNATURE));
-        }
+        assertNotNull("token revocation signature must be present.",claims.get(Claims.REVOCATION_SIGNATURE));
 
         if (noRefreshToken) {
             assertNull(accessToken.getRefreshToken());
@@ -724,8 +720,7 @@ public class UaaTokenServicesTests {
             assertEquals(refreshTokenClaims.get(Claims.CID), CLIENT_ID);
             assertEquals(refreshTokenClaims.get(Claims.SCOPE), requestedAuthScopes);
             assertEquals(refreshTokenClaims.get(Claims.AUD), resourceIds);
-            if ((!noRefreshToken) && "revocable".equals(authentication.getOAuth2Request().getRequestParameters().get("token_type"))) {
-                assertEquals("revocable",refreshTokenClaims.get(Claims.TOKEN_TYPE));
+            if (!noRefreshToken) {
                 assertNotNull("token revocation signature must be present.",refreshTokenClaims.get(Claims.REVOCATION_SIGNATURE));
             }
             assertTrue(((String) refreshTokenClaims.get(Claims.JTI)).length() > 0);

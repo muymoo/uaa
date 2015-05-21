@@ -99,7 +99,7 @@ public class SignerProvider implements InitializingBean {
     public String getRevocationHash(List<String> salts) {
         String result = "";
         for (String s : salts) {
-            result = DigestUtils.sha256Hex(result+ "###" + s);
+            result = DigestUtils.sha1Hex(result+ "###" + s);
         }
         return result;
     }
