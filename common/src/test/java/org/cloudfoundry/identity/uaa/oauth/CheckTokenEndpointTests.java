@@ -59,11 +59,6 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * @author Dave Syer
- * @author Joel D'sa
- *
- */
 @RunWith(Parameterized.class)
 public class CheckTokenEndpointTests {
 
@@ -106,7 +101,7 @@ public class CheckTokenEndpointTests {
         IdentityZoneHolder.get().getId(),
         "salt");
 
-    private UaaUserDatabase userDatabase = mock(UaaUserDatabase.class);
+    private UaaUserDatabase userDatabase = null;
 
     private BaseClientDetails defaultClient = new BaseClientDetails("client", "scim, cc", "read, write", "authorization_code, password","scim.read, scim.write", "http://localhost:8080/uaa");
 
@@ -211,8 +206,7 @@ public class CheckTokenEndpointTests {
 
     @Before
     public void setUp() {
-        when(userDatabase.retrieveUserById(eq(userId))).thenReturn(user);
-        when(userDatabase.retrieveUserById(not(eq(userId)))).thenThrow(new UsernameNotFoundException("mock"));
+        mockUserDatabase(userId, user);
         authorizationRequest = new AuthorizationRequest("client", Collections.singleton("read"));
         authorizationRequest.setResourceIds(new HashSet<>(Arrays.asList("client","scim")));
         Map<String,String> requestParameters = new HashMap<>();
@@ -228,7 +222,6 @@ public class CheckTokenEndpointTests {
         endpoint.setTokenServices(tokenServices);
         Date oneSecondAgo = new Date(System.currentTimeMillis() - 1000);
         Date thirtySecondsAhead = new Date(System.currentTimeMillis() + 30000);
-        tokenServices.setUserDatabase(userDatabase);
 
         approvalStore.addApproval(new Approval(userId, "client", "read", thirtySecondsAhead, ApprovalStatus.APPROVED,
                         oneSecondAgo));
@@ -241,6 +234,13 @@ public class CheckTokenEndpointTests {
         tokenServices.setClientDetailsService(clientDetailsService);
 
         accessToken = tokenServices.createAccessToken(authentication);
+    }
+
+    protected void mockUserDatabase(String userId, UaaUser user) {
+        userDatabase = mock(UaaUserDatabase.class);
+        when(userDatabase.retrieveUserById(eq(userId))).thenReturn(user);
+        when(userDatabase.retrieveUserById(not(eq(userId)))).thenThrow(new UsernameNotFoundException("mock"));
+        tokenServices.setUserDatabase(userDatabase);
     }
 
     @Test
@@ -294,7 +294,7 @@ public class CheckTokenEndpointTests {
             false,
             IdentityZoneHolder.get().getId(),
             "changedsalt");
-        when(userDatabase.retrieveUserById(eq(userId))).thenReturn(user);
+        mockUserDatabase(userId,user);
         endpoint.checkToken(accessToken.getValue());
     }
 
@@ -315,7 +315,8 @@ public class CheckTokenEndpointTests {
             false,
             IdentityZoneHolder.get().getId(),
             "salt");
-        when(userDatabase.retrieveUserById(eq(userId))).thenReturn(user);
+
+        mockUserDatabase(userId,user);
         endpoint.checkToken(accessToken.getValue());
     }
 

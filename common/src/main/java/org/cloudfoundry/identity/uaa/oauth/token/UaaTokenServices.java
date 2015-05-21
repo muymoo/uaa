@@ -38,6 +38,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.jwt.Jwt;
 import org.springframework.security.jwt.JwtHelper;
 import org.springframework.security.oauth2.client.resource.OAuth2AccessDeniedException;
@@ -763,7 +764,7 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
             if (user.getModified().after(new Date(accessTokenIssueDate))) {
                 logger.debug("User was last modified at " + user.getModified() + " access token was issued at "
                                 + new Date(accessTokenIssueDate));
-                throw new InvalidTokenException("Invalid access token (password changed): " + accessToken);
+                throw new InvalidTokenException("Invalid access token (user modified): " + accessToken);
             }
 
             // Check approvals to make sure they're all valid, approved and not
@@ -827,6 +828,21 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
 
         if (getTokenEndpoint()!=null && !getTokenEndpoint().equals(claims.get(ISS))) {
             throw new InvalidTokenException("Invalid issuer for token:"+claims.get(ISS));
+        }
+
+        if ("revocable".equals(claims.get(Claims.TOKEN_TYPE))) {
+            String signature = (String)claims.get(Claims.REVOCATION_SIGNATURE);
+            String clientId = (String)claims.get(Claims.CLIENT_ID);
+            String userId = (String)claims.get(Claims.USER_ID);
+            UaaUser user = null;
+            ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
+            try {
+                user = userDatabase.retrieveUserById(userId);
+            } catch (UsernameNotFoundException x) {
+            }
+            if (signature!=null && !signature.equals(getRevocableTokenSignature(client,user))) {
+                throw new TokenRevokedException(token);
+            }
         }
 
         return claims;
