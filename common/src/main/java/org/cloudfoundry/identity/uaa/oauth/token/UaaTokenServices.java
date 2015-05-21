@@ -583,6 +583,7 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
         }
 
         response.put(CID, clientId);
+        response.put(CLIENT_ID, clientId);
         if (getTokenEndpoint() != null) {
             response.put(ISS, getTokenEndpoint());
             response.put(ZONE_ID,IdentityZoneHolder.get().getId());
@@ -754,7 +755,7 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
             // Check approvals to make sure they're all valid, approved and not
             // more recent
             // than the token itself
-            String clientId = (String) claims.get(CLIENT_ID);
+            String clientId = (String) claims.get(CID);
             ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
 
             @SuppressWarnings("unchecked")
@@ -816,7 +817,7 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
 
         String signature = (String)claims.get(Claims.REVOCATION_SIGNATURE);
         if (signature!=null) { //this ensures backwards compatibility during upgrade
-            String clientId = (String) claims.get(Claims.CLIENT_ID);
+            String clientId = (String) claims.get(Claims.CID);
             String userId = (String) claims.get(Claims.USER_ID);
             UaaUser user = null;
             ClientDetails client = clientDetailsService.loadClientByClientId(clientId);
