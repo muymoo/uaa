@@ -91,6 +91,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -278,7 +279,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         ScimUser developer = setUpUser(username, userScopes);
 
         mockMvc.perform(post("/oauth/token")
-            .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
+            .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
             .param("username", username)
             .param("password", "secret")
             .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
@@ -288,7 +289,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
             .andExpect(status().isOk());
 
         mockMvc.perform(post("/oauth/token")
-            .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
+            .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
             .param("username", username)
             .param("password", "secret")
             .header("Authorization", "Basic "+new String(Base64.encode((clientId2  + ":" + SECRET).getBytes())))
@@ -472,8 +473,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         SecurityContextHolder.getContext().setAuthentication(auth);
         MockHttpSession session = new MockHttpSession();
         session.setAttribute(
-                HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                new MockSecurityContext(auth)
+            HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
+            new MockSecurityContext(auth)
         );
 
         String state = new RandomValueStringGenerator().generate();
@@ -526,8 +527,8 @@ public class TokenMvcMockTests extends TestClassNullifier {
         session.setAttribute("authorizationRequest", authorizationRequest);
 
         MvcResult result  = mockMvc.perform(post("/oauth/authorize")
-                .session(session)
-                .param(OAuth2Utils.USER_OAUTH_APPROVAL, "true")).andExpect(status().is3xxRedirection()).andReturn();
+            .session(session)
+            .param(OAuth2Utils.USER_OAUTH_APPROVAL, "true")).andExpect(status().is3xxRedirection()).andReturn();
 
         URL url = new URL(result.getResponse().getHeader("Location").replace("redirect#","redirect?"));
         Map query = splitQuery(url);
@@ -1479,7 +1480,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         setUpClients(clientId, scopes, scopes, GRANT_TYPES, true);
         mockMvc.perform(post("/oauth/token")
             .accept(MediaType.APPLICATION_JSON_VALUE)
-            .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
+            .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
             .param("grant_type", "client_credentials")
             .param("client_id", clientId)
             .param("client_secret", SECRET))
@@ -1498,7 +1499,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         mockMvc.perform(post("http://"+subdomain+".localhost/oauth/token")
             .accept(MediaType.APPLICATION_JSON_VALUE)
             .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
-            .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
+            .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
             .param("grant_type", "client_credentials")
             .param("client_id", clientId)
             .param("client_secret", SECRET))
@@ -1517,7 +1518,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         mockMvc.perform(post("http://localhost/oauth/token")
             .accept(MediaType.APPLICATION_JSON_VALUE)
             //.header("Host", subdomain + ".localhost") - with updated Spring, this now works for request.getServerName
-            .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
+            .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
             .param("grant_type", "client_credentials")
             .param("client_id", clientId)
             .param("client_secret", SECRET))
@@ -1531,10 +1532,10 @@ public class TokenMvcMockTests extends TestClassNullifier {
         setUpClients(clientId, scopes, scopes, GRANT_TYPES, true);
         String subdomain = "testzone"+new RandomValueStringGenerator().generate();
         setupIdentityZone(subdomain);
-        mockMvc.perform(post("http://"+subdomain+".localhost/oauth/token")
+        mockMvc.perform(post("http://" + subdomain + ".localhost/oauth/token")
             .accept(MediaType.APPLICATION_JSON_VALUE)
             .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
-            .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
+            .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
             .param("grant_type", "client_credentials")
             .param("client_id", clientId)
             .param("client_secret", SECRET))
@@ -1556,11 +1557,11 @@ public class TokenMvcMockTests extends TestClassNullifier {
         IdentityZoneHolder.clear();
 
         mockMvc.perform(post("/oauth/token")
-                .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
+                .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
                 .param("username", "user@example.com")
                 .param("password", "secret")
-                .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
-                .param(OAuth2Utils.RESPONSE_TYPE,"token")
+                .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
+                .param(OAuth2Utils.RESPONSE_TYPE, "token")
                 .param(OAuth2Utils.GRANT_TYPE, "password")
                 .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isOk());
     }
@@ -1580,7 +1581,7 @@ public class TokenMvcMockTests extends TestClassNullifier {
         IdentityZoneHolder.clear();
 
         mockMvc.perform(post("/oauth/token")
-                .with(new SetServerNameRequestPostProcessor(subdomain+".localhost"))
+                .with(new SetServerNameRequestPostProcessor(subdomain + ".localhost"))
                 .param("username", "user@example.com")
                 .param("password", "secret")
                 .header("Authorization", "Basic "+new String(Base64.encode((clientId  + ":" + SECRET).getBytes())))
@@ -1676,6 +1677,38 @@ public class TokenMvcMockTests extends TestClassNullifier {
             containsInAnyOrder(new String[] {zoneadmingroup, "openid", "cloud_controller.read", "cloud_controller.write"})
         );
 
+    }
+
+    @Test
+    public void testRevocablePasswordGrantTokenForDefaultZone() throws Exception {
+        String tokenKey = "access_token";
+        String clientId = "testclient" + new RandomValueStringGenerator().generate();
+        String scopes = "cloud_controller.read";
+        setUpClients(clientId, scopes, scopes, "password,client_credentials", true, TEST_REDIRECT_URI, Arrays.asList(Origin.UAA));
+        setUpUser();
+
+        Map<String,Object> tokenResponse =
+            JsonUtils.readValue(
+                mockMvc.perform(post("/oauth/token")
+                    .param("username", "user@example.com")
+                    .param("password", "secret")
+                    .param("token_type", "revocable")
+                    .header("Authorization", "Basic " + new String(Base64.encode((clientId + ":" + SECRET).getBytes())))
+                    .param(OAuth2Utils.RESPONSE_TYPE, "token")
+                    .param(OAuth2Utils.GRANT_TYPE, "password")
+                    .param(OAuth2Utils.CLIENT_ID, clientId)).andExpect(status().isOk())
+                    .andDo(print())
+                    .andReturn().getResponse().getContentAsString(), new TypeReference<Map<String,Object>>(){});
+        assertNotNull("Token must be present", tokenResponse.get(tokenKey));
+        assertTrue("Token must be a string", tokenResponse.get(tokenKey) instanceof String);
+        String token = (String)tokenResponse.get(tokenKey);
+        Jwt jwt = JwtHelper.decode(token);
+        Map<String, Object> claims = JsonUtils.readValue(jwt.getClaims(), new TypeReference<Map<String, Object>>(){});
+        assertNotNull("Token type claim must exist.", claims.get(Claims.TOKEN_TYPE));
+        assertEquals("revocable", claims.get(Claims.TOKEN_TYPE));
+        assertNotNull("Token revocation signature must exist", claims.get(Claims.REVOCATION_SIGNATURE));
+        assertTrue("Token revocation signature must be a string", claims.get(Claims.REVOCATION_SIGNATURE) instanceof String);
+        assertEquals("Token revocation signature should be 64 characters long",64, ((String)claims.get(Claims.REVOCATION_SIGNATURE)).length());
     }
 
     private ScimUser setUpUser() {

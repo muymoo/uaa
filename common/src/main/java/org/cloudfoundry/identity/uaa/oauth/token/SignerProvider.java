@@ -1,5 +1,5 @@
 /*******************************************************************************
- *     Cloud Foundry 
+ *     Cloud Foundry
  *     Copyright (c) [2009-2014] Pivotal Software, Inc. All Rights Reserved.
  *
  *     This product is licensed to you under the Apache License, Version 2.0 (the "License").
@@ -12,11 +12,7 @@
  *******************************************************************************/
 package org.cloudfoundry.identity.uaa.oauth.token;
 
-import java.lang.reflect.Field;
-import java.math.BigInteger;
-import java.security.interfaces.RSAPublicKey;
-
-import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -29,9 +25,11 @@ import org.springframework.security.jwt.crypto.sign.Signer;
 import org.springframework.security.oauth2.common.util.RandomValueStringGenerator;
 import org.springframework.util.Assert;
 
+import java.util.List;
+
 /**
  * A class that knows how to provide the signing and verification keys
- * 
+ *
  *
  */
 public class SignerProvider implements InitializingBean {
@@ -98,11 +96,19 @@ public class SignerProvider implements InitializingBean {
         }
     }
 
+    public String getRevocationHash(List<String> salts) {
+        String result = "";
+        for (String s : salts) {
+            result = DigestUtils.sha256Hex(result+ "###" + s);
+        }
+        return result;
+    }
+
     /**
      * Sets the JWT signing key. It can be either a simple MAC key or an RSA
      * key. RSA keys should be in OpenSSH format,
      * as produced by <tt>ssh-keygen</tt>.
-     * 
+     *
      * @param key the key to be used for signing JWTs.
      */
     public void setSigningKey(String key) {
@@ -133,12 +139,12 @@ public class SignerProvider implements InitializingBean {
      * The key used for verifying signatures produced by this class. This is not
      * used but is returned from the endpoint
      * to allow resource servers to obtain the key.
-     * 
+     *
      * For an HMAC key it will be the same value as the signing key and does not
      * need to be set. For and RSA key, it
      * should be set to the String representation of the public key, in a
      * standard format (e.g. OpenSSH keys)
-     * 
+     *
      * @param verifierKey the signature verification key (typically an RSA
      *            public key)
      */
