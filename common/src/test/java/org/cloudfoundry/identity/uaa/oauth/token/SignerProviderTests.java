@@ -102,7 +102,6 @@ public class SignerProviderTests {
         String hash2 = signerProvider.getRevocationHash(salts);
         assertFalse("Hash 1 should not be empty",StringUtils.isEmpty(hash1));
         assertFalse("Hash 2 should not be empty", StringUtils.isEmpty(hash2));
-        assertEquals(64, hash1.length());
         assertEquals(hash1, hash2);
     }
 
