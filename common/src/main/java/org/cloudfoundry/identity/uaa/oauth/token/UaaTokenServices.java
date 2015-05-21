@@ -713,9 +713,7 @@ public class UaaTokenServices implements AuthorizationServerTokenServices, Resou
         Authentication userAuthentication = null;
         // Is this a user token?
         if (claims.containsKey(EMAIL)) {
-            UaaUser user = new UaaUser((String) claims.get(USER_ID), (String) claims.get(USER_NAME), null,
-                            (String) claims.get(EMAIL), UaaAuthority.USER_AUTHORITIES, null, null, null, null, null, null, false, IdentityZoneHolder.get().getId());
-
+            UaaUser user = userDatabase.retrieveUserById((String)claims.get(USER_ID));
             UaaPrincipal principal = new UaaPrincipal(user);
             userAuthentication = new UaaAuthentication(principal, UaaAuthority.USER_AUTHORITIES, null);
         }
